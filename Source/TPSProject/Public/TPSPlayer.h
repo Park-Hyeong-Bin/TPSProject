@@ -44,8 +44,21 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = Input)
 	class UInputAction* ia_Turn;
 	
+	//전후좌우 키보드 이동 IA 필드 선언
+	UPROPERTY(EditDefaultsOnly, Category = Input)
+	class UInputAction* ia_Move;
+	
+	UPROPERTY(EditDefaultsOnly, Category = Input)
+	float walkSpeed = 600.f;
+	
+	//이동방향
+	FVector direction;
+	
 	//상하 회전 입력 함수 선언
 	void LookUp(const struct FInputActionValue& inputValue);
 	
 	void Turn(const struct FInputActionValue& inputValue);
+	
+	//이동 함수 선언
+	void Move(const struct FInputActionValue& inputValue);
 };
