@@ -3,6 +3,8 @@
 
 #include "TPSProject/Public/TPSPlayer.h"
 
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 
@@ -22,12 +24,31 @@ ATPSPlayer::ATPSPlayer()
 	cameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComp"));
 	cameraComp->SetupAttachment(springArmComp);
 	
+	//c++ 에서 BP에서의 옵션을 직접 수정하는 경우 참고용
+	/*
+	* springArmComp->bUsePawnControlRotation = true;
+	* cameraComp->bUsePawnControlRotation = false;
+	* bUseControllerRotationYaw = true;
+	*/
+	
+	
 }
 
 // Called when the game starts or when spawned
 void ATPSPlayer::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	//Enhanced Input 시스템이 
+	auto pc = Cast<APlayerController>(Controller);
+	if (pc)
+	{
+		auto subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(pc->GetLocalPlayer());
+		if (subsystem)
+		{
+			subsystem->AddMappingContext(imc_TPS, 0);
+		}
+	}
 	
 }
 
@@ -41,5 +62,25 @@ void ATPSPlayer::Tick(float DeltaTime)
 void ATPSPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	
+	auto PlayerInput = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
+	if (PlayerInput)
+	{
+		PlayerInput->BindAction(ia_LookUp, ETriggerEvent::Triggered, this, &ATPSPlayer::LookUp);
+		PlayerInput->BindAction(ia_Turn, ETriggerEvent::Triggered, this, &ATPSPlayer::Turn);
+	}
 }
+//상하
+void ATPSPlayer::LookUp(const FInputActionValue& inputValue)
+{
+	float value = inputValue.Get<float>();
+	AddControllerPitchInput(value);
+}
+//좌우
+void ATPSPlayer::Turn(const FInputActionValue& inputValue)
+{
+	float value = inputValue.Get<float>();
+	AddControllerYawInput(value);//Z축 회전
+}
+
 

@@ -34,4 +34,18 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	class UCameraComponent* cameraComp;
 	
+	//IMC 선택 필드 선언
+	UPROPERTY(EditDefaultsOnly, Category = Input)
+	class UInputMappingContext* imc_TPS;
+	
+	UPROPERTY(EditDefaultsOnly, Category = Input)
+	class UInputAction* ia_LookUp;
+	
+	UPROPERTY(EditDefaultsOnly, Category = Input)
+	class UInputAction* ia_Turn;
+	
+	//상하 회전 입력 함수 선언
+	void LookUp(const struct FInputActionValue& inputValue);
+	
+	void Turn(const struct FInputActionValue& inputValue);
 };
