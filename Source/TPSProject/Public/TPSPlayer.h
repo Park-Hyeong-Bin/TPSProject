@@ -64,6 +64,17 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = Input)
 	class UInputAction* ia_Fire;
 	
+	//총 스왑 IA 필드 선언
+	UPROPERTY(EditDefaultsOnly, Category = Input)
+	class UInputAction* ia_GrenadeGun;
+	
+	//총 스왑 IA 필드 선언
+	UPROPERTY(EditDefaultsOnly, Category = Input)
+	class UInputAction* ia_SniperGun;
+	
+	// 현재 유탄총을 사용중인지 여부(true = 유탄총, false = 스나이퍼)
+	bool bUsingGrenadeGun = true;
+	
 	//이동속도
 	UPROPERTY(EditDefaultsOnly, Category = Input)
 	float walkSpeed = 600.f;
@@ -89,4 +100,8 @@ public:
 	
 	//총알 발사 함수 선언
 	void InputFire(const FInputActionValue& inputValue);
+	
+	//총 교체 입력 함수 선언
+	void ChangeToGrenadeGun(const struct FInputActionValue& inputValue);
+	void ChangeToSniperGun(const struct FInputActionValue& inputValue);
 };
