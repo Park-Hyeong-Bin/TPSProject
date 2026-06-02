@@ -75,6 +75,17 @@ public:
 	// 현재 유탄총을 사용중인지 여부(true = 유탄총, false = 스나이퍼)
 	bool bUsingGrenadeGun = true;
 	
+	// 조준상태 여부
+	bool bSniperZoom = false;
+	
+	//런타임에 생성될 UI 인스턴스
+	UPROPERTY()
+	class UUserWidget* sniperUI;
+	
+	//스나이퍼 줌 IA 선언
+	UPROPERTY(EditDefaultsOnly, Category = Input)
+	class UInputAction* ia_SniperZoom;
+	
 	//이동속도
 	UPROPERTY(EditDefaultsOnly, Category = Input)
 	float walkSpeed = 600.f;
@@ -83,6 +94,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = BulletFactory)
 	TSubclassOf<class ABullet> bulletFactory;
 	
+	//스나이퍼 줌 UI 위젯 (WBP_SniperUI를 에디터에서 할당 필요)
+	UPROPERTY(EditDefaultsOnly, Category = SniperUI)
+	TSubclassOf<class UUserWidget> sniperUIFactory;
 	
 	//이동방향
 	FVector direction;
@@ -104,4 +118,7 @@ public:
 	//총 교체 입력 함수 선언
 	void ChangeToGrenadeGun(const struct FInputActionValue& inputValue);
 	void ChangeToSniperGun(const struct FInputActionValue& inputValue);
+	
+	//스나이퍼 줌 함수 선언
+	void SniperZoom();
 };
