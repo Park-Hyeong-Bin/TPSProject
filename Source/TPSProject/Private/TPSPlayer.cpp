@@ -81,7 +81,7 @@ void ATPSPlayer::BeginPlay()
 	}
 	
 	//스나이퍼 UI 위젯 인스턴스 생성(화면에 보이기 위해서는 AddToViewport() 호출 시 등장)
-	CreateWidget(GetWorld(), sniperUIFactory);
+	sniperUI = CreateWidget(GetWorld(), sniperUIFactory);
 	
 }
 
