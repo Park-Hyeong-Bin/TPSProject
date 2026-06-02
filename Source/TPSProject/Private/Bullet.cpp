@@ -44,13 +44,20 @@ ABullet::ABullet()
 	//반동 값(탄성)
 	movementComp -> Bounciness = 0.3f;	
 	
-	
+	/*
+	//객체 생명 시간 스스로 destroy
+	InitialLifeSpan = 2.f;
+	*/
 }
 
 // Called when the game starts or when spawned
 void ABullet::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	FTimerHandle deathTimer;
+	//SetTimer(핸들러, 대상 객체, 호출함수, 시간, 반복여부)
+	GetWorldTimerManager().SetTimer(deathTimer, this, &ABullet::Die, 2.f, false);
 	
 }
 
@@ -59,4 +66,10 @@ void ABullet::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 }
+
+void ABullet::Die()
+{
+	Destroy();
+}
+
 
