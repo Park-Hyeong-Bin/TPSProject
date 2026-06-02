@@ -45,6 +45,19 @@ ATPSPlayer::ATPSPlayer()
 		gunMeshComp->SetRelativeLocation(FVector(-14.0f, 57.0f, 120.0f));//임시위치
 	}
 	
+	//스나이퍼 스태틱 메시 컴포넌트 동적
+	sniperGunComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SniperGunComponent"));
+	// 캐릭터 메시 컴포넌트(GetMesh()) 부모에 부착
+	sniperGunComp -> SetupAttachment(GetMesh());
+	ConstructorHelpers::FObjectFinder<UStaticMesh> TempSniperGunMesh(TEXT("/Script/Engine.StaticMesh'/Game/Weapons/Sniper/sniper1.sniper1'"));
+	if (TempSniperGunMesh.Succeeded())
+	{
+		//해당 경로의 스켈레탈메시를 찾았다면
+		sniperGunComp -> SetStaticMesh(TempSniperGunMesh.Object);
+		sniperGunComp -> SetRelativeLocation(FVector(-14.0f, 57.0f, 120.0f));//임시위치
+		sniperGunComp -> Set
+		
+	}
 }
 
 // Called when the game starts or when spawned
