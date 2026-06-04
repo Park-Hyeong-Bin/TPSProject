@@ -98,6 +98,15 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = SniperUI)
 	TSubclassOf<class UUserWidget> sniperUIFactory;
 	
+	//런타임에 생성될 UI 인스턴스
+	UPROPERTY()
+	class UUserWidget* CrosshairUI;
+	
+	//일반 조준 그로스헤어 UI 위젯 팩토리
+	//스나이퍼 줌 UI 위젯 (WBP_SniperUI를 에디터에서 할당 필요)
+	UPROPERTY(EditDefaultsOnly, Category = CrosshairUI)
+	TSubclassOf<class UUserWidget> CrosshairUIFactory;
+	
 	//이동방향
 	FVector direction;
 	
