@@ -51,4 +51,15 @@ public:
 	
 	//경과 시간(누적)
 	float currentTime = 0.0f;
+	
+	//목표 타겟
+	UPROPERTY(VisibleAnywhere, Category = FSM)
+	class ATPSPlayer* target;
+	
+	//소유 벡터
+	UPROPERTY()
+	class AEnemy* me;
+	//
+	UPROPERTY(EditDefaultsOnly, Category = FSM)
+	float attackRange = 150.f;
 };
