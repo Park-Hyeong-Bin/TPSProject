@@ -55,7 +55,16 @@ void UEnemyFSM::IdleState()
 //추적 - 플레이어 방향으로 이동, 공격 범위 진입 시 공격 상태로 전환
 void UEnemyFSM::MoveState()
 {
+	//시간 누적
+	currentTime += GetWorld()->GetDeltaSeconds();
 	
+	if (currentTime > idleDelayTime)
+	{
+		//move 상태로 전환
+		mState = EEnemyState::Move;
+		//경과 시간 초기화
+		currentTime = 0.0f;
+	}
 }
 //공격 - 일정 주기로 공격, 플레이어가 범위 이탈 시 추적으로 전환
 void UEnemyFSM::AttackState()
