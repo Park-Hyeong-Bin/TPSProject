@@ -1,13 +1,17 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "TPSProject/Public/TPSPlayer.h"
 
+#include <NiagaraFunctionLibrary.h>
 #include "Bullet.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "InterchangeResult.h"
+#include "SWarningOrErrorBox.h"
 #include "Blueprint/UserWidget.h"
 #include "Camera/CameraComponent.h"
+#include "EditorState/EditorState.h"
 #include "GameFramework/SpringArmComponent.h"
 
 
@@ -23,42 +27,46 @@ ATPSPlayer::ATPSPlayer()
 	springArmComp->SetRelativeLocation(FVector(.0f, 70.0f, 90.0f)); // 암 컴포넌트의 시작점
 	springArmComp->TargetArmLength = 400.f;
 	
-	cameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComp"));
+	cameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
 	cameraComp->SetupAttachment(springArmComp);
 	
-	//c++ 에서 BP에서의 옵션을 직접 수정하는 경우 참고용
-	/*
-	* springArmComp->bUsePawnControlRotation = true;
-	* cameraComp->bUsePawnControlRotation = false;
-	* bUseControllerRotationYaw = true;
-	*/
+	// C++에서 BP에서의 옵션들 직접 수정하는 경우 아래처럼 해당 옵션 변수들을 직접 코드로 제어 가능
+	// springArmComp->bUsePawnControlRotation = true;
+	// cameraComp->bUsePawnControlRotation = false;
+	// bUseControllerRotationYaw = true;
 	
 	// 총 스켈레탈메시 컴포넌트 등록
-	gunMeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("GunComponent"));
+	gunMeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("GunMeshComponent"));
 	// 캐릭터 메시 컴포넌트(GetMesh()) 부모에 부착
-	gunMeshComp -> SetupAttachment(GetMesh());
-	//스켈레탈 메시 데이터 동적 로드
+	gunMeshComp->SetupAttachment(GetMesh());
+	// LineTrace가 총에 막히지 않도록 충돌 해제
+	gunMeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// 스켈레탈 메시 데이터 동적로드
 	ConstructorHelpers::FObjectFinder<USkeletalMesh> TempGunMesh(TEXT("/Script/Engine.SkeletalMesh'/Game/Weapons/GrenadeLauncher/Meshes/SKM_GrenadeLauncher.SKM_GrenadeLauncher'"));
 	if (TempGunMesh.Succeeded())
 	{
-		//해당 경로의 스켈레탈메시를 찾았다면
+		// 해당 경로의 스켈레탈메시를 찾았다면, 메시 할당 + 임시 위치 보정
 		gunMeshComp->SetSkeletalMesh(TempGunMesh.Object);
-		gunMeshComp->SetRelativeLocation(FVector(-14.0f, 57.0f, 120.0f));//임시위치
+		gunMeshComp->SetRelativeLocation(FVector(-14.0f, 52.0f, 120.0f));
 	}
 	
-	//스나이퍼 스태틱 메시 컴포넌트 동적
-	sniperGunComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SniperGunComponent"));
+	// 스나이퍼건 스태틱 메시 컴포넌트 등록
+	sniperGunComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SniperGun StaticMeshComponent"));
 	// 캐릭터 메시 컴포넌트(GetMesh()) 부모에 부착
-	sniperGunComp -> SetupAttachment(GetMesh());
-	ConstructorHelpers::FObjectFinder<UStaticMesh> TempSniperGunMesh(TEXT("/Script/Engine.StaticMesh'/Game/Weapons/Sniper/sniper1.sniper1'"));
+	sniperGunComp->SetupAttachment(GetMesh());
+	// LineTrace가 총에 막히지 않도록 충돌 해제
+	sniperGunComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// 스태틱 메시 데이터 동적로드
+	ConstructorHelpers::FObjectFinder<UStaticMesh> TempSniperGunMesh(TEXT("/Script/Engine.StaticMesh'/Game/Weapons/Sniper/Meshes/sniper1.sniper1'"));
 	if (TempSniperGunMesh.Succeeded())
 	{
-		//해당 경로의 스켈레탈메시를 찾았다면
-		sniperGunComp -> SetStaticMesh(TempSniperGunMesh.Object);
-		sniperGunComp -> SetRelativeLocation(FVector(-14.0f, 57.0f, 120.0f));//임시위치
+		// 해당 경로의 스태틱메시를 찾았다면, 메시 할당 + 임시 위치 보정
+		sniperGunComp->SetStaticMesh(TempSniperGunMesh.Object);
+		sniperGunComp->SetRelativeLocation(FVector(-14.0f, 52.0f, 120.0f));
 		sniperGunComp->SetRelativeScale3D(FVector(0.8f));
 	}
 	
+	// [개발용] 시작 시 기본 무기로 스나이퍼건을(유탄총을 숨김)
 	bUsingGrenadeGun = false;
 	sniperGunComp->SetVisibility(true);
 	gunMeshComp->SetVisibility(false);
@@ -69,7 +77,7 @@ void ATPSPlayer::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	//Enhanced Input 시스템이 
+	// Enhanced Input 시스템이 IMC_TPS 사용하도록 설정
 	auto pc = Cast<APlayerController>(Controller);
 	if (pc)
 	{
@@ -80,16 +88,15 @@ void ATPSPlayer::BeginPlay()
 		}
 	}
 	
-	//스나이퍼 UI 위젯 인스턴스 생성(화면에 보이기 위해서는 AddToViewport() 호출 시 등장)
+	// 스나이퍼 UI 위젯 인스턴스 생성 (화면에 보이기 위해서는 AddToViewport() 호출 시 등장)
 	sniperUI = CreateWidget(GetWorld(), sniperUIFactory);
-	
 }
 
 // Called every frame
 void ATPSPlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	
 	// 캐릭터 이동처리에서 버그 예시)
 	// GetControlRation() 함수는 좌우(YAW) 말고도 상하(PITCH)까지 포함된 카메라 전체 회전
 	// PITCH 움직임에 X축을 기울이는 성질이 있어서 카메라가 아래를 향하는 상태에서 W를 누르면
@@ -104,7 +111,7 @@ void ATPSPlayer::Tick(float DeltaTime)
 	
 	// YAW좌우 측값만 남은 벡터를 넣어둠 -> 카메라가 어디를 보던지, 이동은 수평면 위에서만 이루어지도록 함
 	direction = FRotationMatrix(controlRot).TransformVector(direction); // 자기를 기준으로 벡터 변환
-
+	
 	// 언리얼엔진에서 제공하는 위 등속 운동을 구현한 함수 AddMovementInput()
 	AddMovementInput(direction);
 	direction = FVector::ZeroVector;
@@ -126,22 +133,25 @@ void ATPSPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 		PlayerInput->BindAction(ia_GrenadeGun, ETriggerEvent::Started, this, &ATPSPlayer::ChangeToGrenadeGun);
 		PlayerInput->BindAction(ia_SniperGun, ETriggerEvent::Started, this, &ATPSPlayer::ChangeToSniperGun);
 		PlayerInput->BindAction(ia_SniperZoom, ETriggerEvent::Started, this, &ATPSPlayer::SniperZoom);
-		//PlayerInput->BindAction(ia_SniperZoom, ETriggerEvent::Completed, this, &ATPSPlayer::SniperZoom);
+		// PlayerInput->BindAction(ia_SniperZoom, ETriggerEvent::Completed, this, &ATPSPlayer::SniperZoom); // 토글 방식 사용 시 주석
 	}
 }
-//상하
+
+// 상하 회전 입력에 따른 콜백 함수 구현
 void ATPSPlayer::LookUp(const FInputActionValue& inputValue)
 {
 	float value = inputValue.Get<float>();
-	AddControllerPitchInput(value);
+	AddControllerPitchInput(value); // PITCH(Y축) 회전
 }
-//좌우
+
+// 좌우 회전 입력에 따른 콜백 함수 구현
 void ATPSPlayer::Turn(const FInputActionValue& inputValue)
 {
 	float value = inputValue.Get<float>();
-	AddControllerYawInput(value);//Z축 회전
+	AddControllerYawInput(value); // YAW(Z축) 회전
 }
 
+// 전후좌우 이동 입력에 따른 콜백 함수 구현
 void ATPSPlayer::Move(const FInputActionValue& inputValue)
 {
 	FVector2D value = inputValue.Get<FVector2D>(); // 전달받는 2D 값
@@ -155,13 +165,53 @@ void ATPSPlayer::InputJump(const FInputActionValue& inputValue)
 	Jump(); // ACharacter 클래스가 제공하는 기본 점프 함수 호출
 }
 
-// 총알 발사 함수 구현
 void ATPSPlayer::InputFire(const FInputActionValue& inputValue)
 {
-	// 총 스켈레탈메시에 FirePosition 이란 이름의 소켓의 월드 트랜스폼(위치/회전)을 가져옴
-	FTransform firePosition = gunMeshComp->GetSocketTransform(TEXT("FirePosition"));
-	// 위 위치/회전으로 BulletFactory가 BP_Bullet 인스턴스를 월드에 스폰
-	GetWorld()->SpawnActor<ABullet>(bulletFactory, firePosition);
+	if (bUsingGrenadeGun)
+	{
+		// 유탄총을 사용하는 경우
+		// 총 스켈레탈메시에 FirePosition 이란 이름의 소켓의 월드 트랜스폼(위치/회전)을 가져옴
+		FTransform firePosition = gunMeshComp->GetSocketTransform(TEXT("FirePosition"));
+		// 위 위치/회전으로 BulletFactory가 BP_Bullet 인스턴스를 월드에 스폰
+		GetWorld()->SpawnActor<ABullet>(bulletFactory, firePosition);
+	}
+	else
+	{
+		// 스나이퍼건을 사용하는 경우
+		// 라인의 시작/종료 위치 설정 - 카메라부터 카메라 정면 50m까지
+		FVector startPos = cameraComp->GetComponentLocation();
+		FVector endPos = startPos + cameraComp->GetForwardVector() * 5000.f; // 50m
+		
+		// 충돌 결과 저장, 플레이어 자신은 충돌 검사에서 제외
+		FHitResult hitResult;
+		FCollisionQueryParams params;
+		params.AddIgnoredActor(this);
+		
+		// LineTraceSingleByChannel(결과그릇, 시작위치, 종료위치, 트레이스채널, 충돌옵션)
+		// Visibility 채널로 라인트래이스를 실행하고 -> 처음 부딪힌 액터 하나만 검출
+		bool bHit = GetWorld()->LineTraceSingleByChannel(hitResult, startPos, endPos, ECC_Visibility, params);
+		
+		// [DEBUG] LineTrace 경로 시각화 - 빨강(미충돌) / 초록(충돌)
+		DrawDebugLine(GetWorld(), startPos, endPos, bHit ? FColor::Green : FColor::Red, false, 1.f, 0, .2f);
+		
+		if (bHit)
+		{
+			// [DEBUG] 충돌 정보
+			UE_LOG(LogTemp, Warning, TEXT("HIT: Actor=%s, Component=%s, Distance=%.1f, ImpactPoint=%s"),
+				hitResult.GetActor() ? *hitResult.GetActor()->GetName() : TEXT("None"),
+				hitResult.GetComponent() ? *hitResult.GetComponent()->GetName() : TEXT("None"),
+				hitResult.Distance,
+				*hitResult.ImpactPoint.ToString()
+			);
+			
+			// [DEBUG] 타격 위치 시각화
+			DrawDebugSphere(GetWorld(), hitResult.ImpactPoint, 20.f, 12, FColor::Yellow, false, 2.f);
+			
+			// 타격 위치에 Niagara 이펙트 스폰
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), bulletEffectFactory, hitResult.ImpactPoint);
+		}
+	}
+
 }
 
 // 유탄총으로 스왑
@@ -186,24 +236,24 @@ void ATPSPlayer::ChangeToSniperGun(const FInputActionValue& inputValue)
 
 void ATPSPlayer::SniperZoom()
 {
-	//스나이퍼 총이 아닐 떄는 동작 하면 안됨
+	// 스나이퍼 총이 아닐 때는 동작하지 않음
 	if (bUsingGrenadeGun)
 	{
 		return;
 	}
+	
 	if (bSniperZoom == false)
 	{
-		//키 누름 - 줌 모드에 진입
+		// 키 누름 - 줌 모드에 진입
 		bSniperZoom = true;
-		sniperUI -> AddToViewport();
-		//시야각 좁혀서 줌인 효과
-		cameraComp -> SetFieldOfView(45.f);
+		sniperUI->AddToViewport(); // 조준경 UI 화면에 나타남
+		cameraComp->SetFieldOfView(45.f); // FOV 시야각을 좁혀서 줌인 효과
 	}
 	else
 	{
-		//키 해제 - 줌 모드 해제
+		// 키 해제 - 줌 모드에서 해제
 		bSniperZoom = false;
-		sniperUI->RemoveFromParent();
-		cameraComp -> SetFieldOfView(90.f);
+		sniperUI->RemoveFromParent(); // 조준경 UI 제거
+		cameraComp->SetFieldOfView(90.f); // FOX 시야각 복구
 	}
 }
