@@ -86,9 +86,17 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = Input)
 	class UInputAction* ia_SniperZoom;
 	
+	//걷기 IA 필드 선언 - 기본은 달리기, 누르는 동안 걷기
+	UPROPERTY(EditDefaultsOnly, Category = Input)
+	class UInputAction* ia_Walk;
+	
+	//달리기 속도
+	UPROPERTY(EditDefaultsOnly, Category = Input)
+	float runSpeed = 600.f;
+	
 	//이동속도
 	UPROPERTY(EditDefaultsOnly, Category = Input)
-	float walkSpeed = 600.f;
+	float walkSpeed = 200.f;
 	
 	//총알 스폰 팩토리
 	UPROPERTY(EditDefaultsOnly, Category = BulletFactory)
@@ -134,4 +142,7 @@ public:
 	// 스나이퍼 사격 명중 시 표시할 총알 파편 효과 선언
 	UPROPERTY(EditAnywhere)
 	class UNiagaraSystem* bulletEffectFactory;
+	
+	//걷기 입력 함수 선언
+	void InputWalk();
 };
