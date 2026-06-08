@@ -18,9 +18,13 @@ public:
 	//매 프레임 자동 호출 - 소유 폰의 상태를 읽어서 변수 갱신(Tick)
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
     
-	//캐릭터의 현재 이동 속도(ABP State Machine의 전이 조건에서 사용)
+	//캐릭터의 현재 이동 속도(ABP State Machine의 전이 조건에서 사용) - 양수는 전진 음수는 후진 blend space의 세로축
 	UPROPERTY(BlueprintReadOnly, Category = PlayerAnim)
 	float speed = 0.f;
+	
+	//캐릭터의 좌우 이동 방향(양수가 우측, 음수과 좌측) - blend space의 가로축
+	UPROPERTY(BlueprintReadOnly, Category = PlayerAnim)
+	float direction = 0.f;
 	
 	//캐릭터가 현재 공중에 있는지 여부 ( 점프/낙하 중)
 	UPROPERTY(BlueprintReadOnly, Category = PlayerAnim)
